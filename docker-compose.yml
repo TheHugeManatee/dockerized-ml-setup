@@ -1,0 +1,13 @@
+version: '2.3'
+services:
+  jupyter:
+    build: .
+    container_name: mlenv
+    runtime: nvidia
+    volumes:
+      - /home/TheHugeManatee/my_project/:/code
+      - /home/TheHugeManatee/data/:/data
+    ports:
+      - "8888:8888"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
