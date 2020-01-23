@@ -1,4 +1,7 @@
 # Installation/Setup notes - ML System with Docker
+This repository/tutorial shows how I set up a dockerized ML environment on an Ubuntu host. Although it seems a lot of additional work instead of just running directly on the machine, the docker-containerized nature of this helps to separate environments between projects much better, as well as allocate system resources, for example by having two separate projects running each in a separate container, each using its own GPU without ANY changes in their code.
+
+I used the NVidia tools for setting up the package. I use [fastai](https://docs.fast.ai) which is based on pytorch, but the setup should work equally well for a tensorflow setup.
 
 ## Step 1 - Installed Ubuntu 18.04 LTS and host System and drivers
  - installed CUDA 10.1 from [official instructions](https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=debnetwork)
@@ -44,27 +47,30 @@
    }
    ```
 ## Step 3 - Set up a working project
- - pulled the [optimized nvidia pytorch container](https://ngc.nvidia.com/catalog/containers/nvidia:pytorch)
+This part is specific to your project - here you build the individual environment inside your container. If you have cloned the example github repo, you can just run `docker-compose up` now to start a jupyter server.
+ - I used the [optimized nvidia pytorch container](https://ngc.nvidia.com/catalog/containers/nvidia:pytorch) as a basis:
     ```bash
     docker pull nvcr.io/nvidia/pytorch:19.12-py3
+    # this may take a while...
     ```
  - they suggest using the following command for an interactive session:
     ```bash
-    docker run --gpus all -it --rm -v local_dir:container_dir nvcr.io/nvidia/pytorch:xx.xx-py3
+    docker run --gpus all -it --rm -v local_dir:container_dir nvcr.io/nvidia/pytorch:19.12-py3
     ```
 
-Instead, i like to setup my container as a more persistent container (as I like to install some additional libraries). For that, I use a slightly different setup:
- - I use a git repository to store all my source code and map this directly into my container into `/code`. This allows me to work on the code from the host side
- - I use a separate directory for (large) training data which I map to `/data` in the container
+Instead, i prefer to setup my container as a more persistent container (as I like to install some additional libraries). For that, I use a slightly different setup:
+ - I use a git repository to store all my source code (in my example, `/home/TheHugeManatee/my_project`) and map this directly into my container into `/code`. This allows me to work on the code from the host side
+ - I use a separate directory for (large) training data which I map to `/data` in the container. You could also add separate volumes for your training/testing results and models but I just tend to put that into the `data` partition.
  - I use a `Dockerfile` to set up my default container to already have some python packages installed, and automatically start a jupyter instance:
     ```Dockerfile
     FROM nvcr.io/nvidia/pytorch:19.12-py3
     WORKDIR /code
     RUN pip install fastai
+    # add more libraries here if you need them
     #CMD ["/bin/bash"]
     CMD ["jupyter", "notebook"]
     ```
- - I use a docker-compose file to start up the container:
+ - I use a `docker-compose.yml` file to configure and start up the container:
     ```yml
     version: '2.3'
     services:
@@ -82,7 +88,7 @@ Instead, i like to setup my container as a more persistent container (as I like 
     ```
     **Note**: seemingly, the `runtime` option only works with `version: '2.3'`, **NOT** with `version: '3'`.
 
-To work on my project and code/train, run `docker-compose up`, then copy the url from the console window into the browser on the host system to start using jupyter.
+To work on my project and code/train, I run `docker-compose up`, then copy the url from the console window into the browser on the host system to start using jupyter. For non-jupyter files I tend to work on the source files on the host directly.
 
 
 ## For more convenience:
